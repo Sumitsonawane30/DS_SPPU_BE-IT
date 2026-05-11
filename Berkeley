@@ -1,0 +1,174 @@
+//NO.4 - Program to implement Berkeley Clock Synchronization Algorithm in Distributed Systems
+
+import java.util.*;
+
+public class Berkeley {
+
+    // Converts given hours, minutes and seconds into total seconds.
+    // This makes time difference calculation easier.
+    static int toSeconds(int h, int m, int s) {
+        return h * 3600 + m * 60 + s;
+    }
+
+    // Converts total seconds back into HH:MM:SS format.
+    // Modulo 86400 is used because one day has 24 * 60 * 60 = 86400 seconds.
+    static String toHMS(int total) {
+        total = ((total % 86400) + 86400) % 86400;
+        int h = total / 3600;
+        int m = (total % 3600) / 60;
+        int s = total % 60;
+        return h + ":" + m + ":" + s;
+    }
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+
+        // Master machine reads its own current system time.
+        Calendar cal = Calendar.getInstance();
+
+        // Convert master time into total seconds.
+        int masterTime = toSeconds(
+                cal.get(Calendar.HOUR_OF_DAY),
+                cal.get(Calendar.MINUTE),
+                cal.get(Calendar.SECOND));
+
+        System.out.println("Master time: " + toHMS(masterTime));
+
+        // Read number of slave nodes.
+        System.out.print("Enter number of nodes: ");
+        int n = sc.nextInt();
+
+        // nodeTime stores time of each node in seconds.
+        // diff stores difference between node time and master time.
+        int[] nodeTime = new int[n];
+        int[] diff = new int[n];
+        int sum = 0;
+
+        // Read time of each node from the user.
+        for (int i = 0; i < n; i++) {
+            System.out.println("Enter time for Node " + (i + 1) + " (h m s): ");
+            nodeTime[i] = toSeconds(sc.nextInt(), sc.nextInt(), sc.nextInt());
+        }
+
+        System.out.println("\n--- Time Differences ---");
+
+        // Calculate difference of every node from master time.
+        // Positive difference means node is ahead of master.
+        // Negative difference means node is behind master.
+        for (int i = 0; i < n; i++) {
+            diff[i] = nodeTime[i] - masterTime;
+            sum += diff[i];
+            System.out.println("Node " + (i + 1) + " difference: " + diff[i] + "s");
+        }
+
+        // Average correction is calculated by including master also.
+        // Master's difference is considered 0, so divide by n + 1.
+        int avg = sum / (n + 1);
+        System.out.println("\nAverage correction: " + avg + "s");
+
+        System.out.println("\n--- Corrections ---");
+
+        // Master adjusts itself by average correction.
+        System.out.println("Master correction: " + avg + "s");
+
+        // Each node receives correction according to its own difference.
+        // Formula: node correction = average correction - node difference
+        for (int i = 0; i < n; i++) {
+            int correction = avg - diff[i];
+            System.out.println("Node " + (i + 1) + " correction: " + correction + "s");
+        }
+
+        System.out.println("\n--- Synchronized Clocks ---");
+
+        // Display new synchronized master time.
+        System.out.println("Master --> " + toHMS(masterTime + avg));
+
+        // Display synchronized time of each node after applying correction.
+        for (int i = 0; i < n; i++) {
+            int correction = avg - diff[i];
+            System.out.println("Node " + (i + 1) + " --> " + toHMS(nodeTime[i] + correction));
+        }
+
+        sc.close();
+    }
+}
+
+/*
+ * How to run:
+ * 
+ * 1. Save the file as:
+ * Berkeley.java
+ * 
+ * 2. Compile:
+ * javac Berkeley.java
+ * 
+ * 3. Run:
+ * java Berkeley
+ * 
+ * 
+ * Sample Input/Output:
+ * 
+ * Note:
+ * The master time is taken from the system clock, so your output will depend on
+ * the time at which you run the program.
+ * 
+ * Assume master time displayed is:
+ * Master time: 10:0:0
+ * 
+ * Enter number of nodes: 3
+ * 
+ * Enter time for Node 1 (h m s):
+ * 10 5 0
+ * 
+ * Enter time for Node 2 (h m s):
+ * 9 55 0
+ * 
+ * Enter time for Node 3 (h m s):
+ * 10 10 0
+ * 
+ * 
+ * Output:
+ * 
+ * --- Time Differences ---
+ * Node 1 difference: 300s
+ * Node 2 difference: -300s
+ * Node 3 difference: 600s
+ * 
+ * Average correction: 150s
+ * 
+ * --- Corrections ---
+ * Master correction: 150s
+ * Node 1 correction: -150s
+ * Node 2 correction: 450s
+ * Node 3 correction: -450s
+ * 
+ * --- Synchronized Clocks ---
+ * Master --> 10:2:30
+ * Node 1 --> 10:2:30
+ * Node 2 --> 10:2:30
+ * Node 3 --> 10:2:30
+ * 
+ * 
+ * Explanation of sample:
+ * 
+ * Master time = 10:00:00
+ * 
+ * Node 1 = 10:05:00
+ * Difference = +300 seconds
+ * 
+ * Node 2 = 09:55:00
+ * Difference = -300 seconds
+ * 
+ * Node 3 = 10:10:00
+ * Difference = +600 seconds
+ * 
+ * Sum of differences = 300 + (-300) + 600 = 600
+ * 
+ * Average correction = 600 / 4
+ * Because 3 nodes + 1 master = 4
+ * 
+ * Average correction = 150 seconds
+ * 
+ * Final synchronized time = 10:00:00 + 150 seconds
+ * Final synchronized time = 10:02:30
+ */
